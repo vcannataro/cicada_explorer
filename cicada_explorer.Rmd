@@ -1,0 +1,143 @@
+---
+title: "Cicada exploration"
+author: "Vincent L. Cannataro, Ph.D."
+date: "5/30/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+BroodX is here! I think. I haven't seen any. I live in Boston, and have family on Long Island NY, and they haven't seen any either. These critters appear "throughout the eastern US" and have the "greatest range and concentration" of any of the 17-year cicadas ([Wikipedia article](https://en.wikipedia.org/wiki/Brood_X)). So... where are they emerging? And, does it look like they are emerging towards me? (Apparently they emerge as ground temps warm up, so I expect there to be some wave of emergence South --> North). 
+
+> Goal: create a map showing periodic cicada observations over time in 2021. 
+
+# Obtain data
+
+```{r load_package,message=F,warning=F}
+# remotes::install_github("ropensci/rinat")
+library(rinat)
+library(tidyverse)
+```
+
+There are three species in broodX, according to the [wikipedia article](https://en.wikipedia.org/wiki/Brood_X): Magicicada septendecim, Magicicada cassinii and Magicicada septendecula
+
+```{r}
+
+
+# get pharoh data
+pharoh_id <- rinat::get_inat_obs(query = "Magicicada septendecim",quality = "research",year = 2021,maxresults = 1e4)
+
+# what did the query return? 
+
+table(pharoh_id$scientific_name)
+
+# filter for just the species we want
+pharoh_id <- pharoh_id %>% filter(scientific_name == "Magicicada septendecim")
+
+# get cassin data
+cassinii_id <- rinat::get_inat_obs(query = "Magicicada cassinii",quality = "research",year = 2021,maxresults = 1e4)
+table(cassinii_id$scientific_name)
+
+cassinii_id <- cassinii_id %>% filter(scientific_name == "Magicicada cassinii")
+
+# Magicicada septendecula
+septen_id <- rinat::get_inat_obs(query = "Magicicada septendecula",quality = "research",year = 2021,maxresults = 1e4)
+
+table(septen_id$scientific_name)
+
+septen_id <- septen_id %>% filter(scientific_name == "Magicicada septendecula")
+
+```
+
+```{r}
+# combine data
+
+cicada_data <- rbind(rbind(pharoh_id,cassinii_id),septen_id)
+
+```
+
+# Clean data
+
+```{r}
+glimpse(cicada_data) 
+```
+
+It seems "observed_on" is what we want! 
+
+```{r}
+cicada_data <- cicada_data %>% 
+  mutate(obs_date = lubridate::ymd(observed_on))
+```
+
+
+# Map data
+
+Where are all the observations?
+
+```{r}
+# plot layout adapted from https://github.com/ropensci/rinat
+ggplot(data = cicada_data, aes(x = longitude,
+                         y = latitude,
+                         color = scientific_name)) +
+  geom_polygon(data = map_data("state"),
+                   aes(x = long, y = lat, group = group),
+                   fill = "grey95",
+                   color = "gray40",
+                   size = 0.1) +
+  geom_point(size = 0.7, alpha = 0.5) +
+  labs(color="Scientific name") + 
+  coord_fixed(xlim = range(cicada_data$longitude, na.rm = TRUE),
+              ylim = range(cicada_data$latitude, na.rm = TRUE)) +
+  theme_minimal()
+```
+
+
+## Observations, through time! 
+
+```{r, warning=F,message=F}
+library(gganimate)
+
+earliest_sighting <- min(cicada_data$obs_date)
+latest_sighting <- max(cicada_data$obs_date)
+
+
+# cleaning up map+time data for gganimate adapted from https://maximilianrohde.com/posts/2021-01-06-gganimatemap/
+cicada_data$obs_date_fct <- 
+  cicada_data$obs_date %>% 
+  as.factor() %>%
+  fct_expand(as.factor(seq.Date(earliest_sighting,latest_sighting,by = "1 day")) %>% as.character()) %>%
+  fct_relevel(as.character(seq.Date(earliest_sighting,latest_sighting,by = "1 day")))
+
+ggplot(data = cicada_data, aes(x = longitude,
+                         y = latitude,
+                         color = scientific_name, group=obs_date_fct)) +
+  geom_polygon(data = map_data("state"),
+                   aes(x = long, y = lat, group = group),
+                   fill = "grey99",
+                   color = "gray10",
+                   size = 0.1) +
+  geom_point(size = 0.7, alpha = 0.5) +
+  labs(color="Scientific name",
+       title = "BroodX Cicada observations, {closest_state}",
+       subtitle = "Research grade observations on iNaturalist.org for BroodX 2021", 
+       caption = "Plot by @VinCannataro") + 
+  coord_fixed(xlim = range(cicada_data$longitude, na.rm = TRUE),
+              ylim = range(cicada_data$latitude, na.rm = TRUE)) +
+  theme_minimal() + 
+  transition_states(obs_date_fct) + 
+  shadow_mark(color="black") +
+  ease_aes("linear") -> 
+  obs_over_time
+
+animate(obs_over_time,nframes = 100,height = 5, width = 8, units = "in", res = 300)
+
+anim_save(filename = "output_data/cicada_over_time.gif")
+```
+
+
+
+
+
+
