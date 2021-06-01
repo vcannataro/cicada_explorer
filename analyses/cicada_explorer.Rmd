@@ -1,7 +1,7 @@
 ---
 title: "Cicada exploration"
 author: "Vincent L. Cannataro, Ph.D."
-date: "5/30/2021"
+date: 'Last update `r format(Sys.Date(), "%Y-%B-%d")`'
 output: html_document
 ---
 
@@ -131,7 +131,7 @@ ggplot(data = cicada_data, aes(x = longitude,
   ease_aes("linear") -> 
   obs_over_time
 
-animate(obs_over_time,nframes = 100,height = 5, width = 8, units = "in", res = 300)
+animate(obs_over_time,nframes = 100,height = 5, width = 8, units = "in", res = 150)
 
 anim_save(filename = "output_data/cicada_over_time.gif")
 ```
