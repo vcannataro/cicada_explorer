@@ -69,6 +69,15 @@ It seems "observed_on" is what we want!
 ```{r}
 cicada_data <- cicada_data %>% 
   mutate(obs_date = lubridate::ymd(observed_on))
+
+# observations over time? 
+cicada_data %>%
+  count(obs_date) %>%
+  ggplot() + 
+  geom_col(aes(y=n,x=obs_date)) + 
+  labs(y="Number of observations", x="Date") + 
+  theme_minimal()
+
 ```
 
 
