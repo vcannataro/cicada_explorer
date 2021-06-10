@@ -68,15 +68,20 @@ It seems "observed_on" is what we want!
 
 ```{r}
 cicada_data <- cicada_data %>% 
-  mutate(obs_date = lubridate::ymd(observed_on))
+  mutate(obs_date = lubridate::ymd(observed_on)) %>%
+  filter(longitude < -60)
 
 # observations over time? 
 cicada_data %>%
   count(obs_date) %>%
   ggplot() + 
   geom_col(aes(y=n,x=obs_date)) + 
-  labs(y="Number of observations", x="Date") + 
+  labs(y="Number of observations on iNaturalist", x="Date",
+       title="BroodX cicada observations on iNaturalist",
+       subtitle="Includes species Magicicada septendecim, Magicicada cassinii, and Magicicada septendecula", caption = "Plot by @VinCannataro") + 
   theme_minimal()
+
+ggsave("output_data/cicada_obs_over_time.png",height = 4,width = 8)
 
 ```
 
@@ -96,12 +101,15 @@ ggplot(data = cicada_data, aes(x = longitude,
                    color = "gray40",
                    size = 0.1) +
   geom_point(size = 0.7, alpha = 0.5) +
-  labs(color="Scientific name") + 
+  labs(color="Scientific name",
+        title="BroodX cicada observations on iNaturalist",
+        caption = "Plot by @VinCannataro") + 
   coord_fixed(xlim = range(cicada_data$longitude, na.rm = TRUE),
               ylim = range(cicada_data$latitude, na.rm = TRUE)) +
   theme_minimal()
-```
 
+ggsave(filename ="output_data/cicada_BroodX_distribution.png",height = 4,width = 8)
+```
 
 ## Observations, through time! 
 
@@ -147,6 +155,10 @@ anim_save(filename = "output_data/cicada_over_time.gif")
 
 
 
+
+```{r}
+save.image(file = "output_data/cicada_data_after_knit.RData")
+```
 
 
 
